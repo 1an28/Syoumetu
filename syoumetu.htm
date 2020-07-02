@@ -1,0 +1,821 @@
+<!-- file : ws↑↓ {ver : 1.75} -->
+
+<!--
+
+希望(もし可能ならば)
+・終了画面へのいろんなデータの追加
+・p1のx軸の移動（優先）
+・ゲーム開始カウントダウン
+・ゲーム終了した瞬間とリザルト画面に移るまでに一泊置きたい。倒した瞬間リザルト出たらやられたのわからくなりそう
+
+-->
+
+<html>
+	<head>
+		<title>ws↑↓</title>
+		<meta charset="UTF-8" author="Alex.nfo, Ian, flum">
+		<link rel="stylesheet" href="default.css">
+		<script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+		<script>
+		
+var sa = 0;　//プレイヤーの移動距離用の変数
+var skillC = 0; //スキルカウント
+var ATKN = 0;//攻撃アイテムの数
+var wallN = 0; //スポーンした壁の数
+var bulN = 0; //銃弾のスポーン数
+var health = parseInt($("#health1").css("width")); //体力を値にしたやつ
+var muteki = 0; //無敵状態を示す
+var tenmetuC = 0; //点滅するためだけ
+var feelC = 0; //ビームの当たり判定分
+var readyB = 1; //銃のインターバル
+var skillFull = 0; //スキルがチャージされたときの幅を格納
+var hallo = 0; //ハロウィンモードの実装
+var chargePlayed = 0; //スキルチャージの音声を再生したかの格納用変数
+
+// -------------------------------- item集 ----------------------------------
+var ItemFreezing = 0; //p2が銃を撃てなくなる状態用変数
+var ItemSlow = 0; //壁の進行を遅らせるやつ用変数
+var ItemHeal = 0; //回復用
+// --------------------------------------------------------------------------
+
+// -------------------------------- audio集 ---------------------------------
+var hit = new Audio("hit.mp3"); hit.volume=0.3;
+var bgm = new Audio("bgm.mp3");
+var shot = new Audio("shot.mp3"); shot.volume=0.2;
+var skillShot = new Audio("skill.mp3");
+var skillExp = new Audio("exp.mp3");
+var skillCharged = new Audio("skillCharged.mp3"); skillCharged.volume = 0.4;
+// --------------------------------------------------------------------------
+
+//キー操作のコード
+window.document.onkeydown = function (event) {
+	//p1(青)を操作する　ウィンドウを超えないように次に進む領域が超えていないかを毎回ifで確認している
+	if ( event.key == "w" && parseInt($("#p1").css("top")) - sa > 0) $("#p1").css("top", "-=" + sa);
+	if ( event.key == "s" && parseInt($("#p1").css("bottom")) - sa > 0) $("#p1").css("top", "+=" + sa);
+	
+	//p2（赤）を操作する　ウィンドウを以下略
+	if ( event.key == "ArrowUp" && parseInt($("#p2").css("top"))- sa > 0) $("#p2").css("top", "-=" + sa);
+	if ( event.key == "ArrowDown" && parseInt($("#p2").css("bottom")) - sa > 0) $("#p2").css("top", "+=" + sa)
+	
+	if ( event.key == "ArrowLeft" ) spawnBullet();
+	if ( event.key == "ArrowRight") spawnSkill();
+
+	if ( event.key == "r" ) console.log("asdf");
+
+	if ( event.key == " " && $(".home").css("display") != "none" ) {
+		$(".home").css("display", "none");
+		$("body").append("<img id='c321' src='321.gif'>");
+		setTimeout(function () {
+			$("#c321").remove();
+			spawnWall();
+			ATK();
+			moveAttack();
+			BulReload();
+
+		}, 3000);
+		$("#mute").remove();
+
+	}
+
+	console.log(event.key);
+
+}
+
+//壁を生成する関数
+function spawnWall() {
+	//壁の個数と乱数ですポーン
+	if ( wallN < 20 || wallN == 0 ) {
+		wallN++;　//壁の番号をつける
+		$("body").append("<div id='butu' class='" + wallN + "'></div>");
+		$("body").append("<div id='butu' class='" + (wallN + 1) + "'></div>");
+
+		$("." + wallN).css("right",0); //右からの距離が0
+		//if ( wallN == 19 ) wallN = 0; 壁の番号をリセ1
+		var rand = Math.floor(Math.random() * 4); //乱数を0~3の間で決める
+
+		$("." + wallN).css("top", parseInt($(".ground")[rand].style.top) - parseInt($("#butu").css("height"))); //生成した壁の位置決め（ランダム）
+		$("." + (wallN + 1)).css("top", parseInt($(".ground")[rand].style.top) - parseInt($("#butu").css("height"))); //生成した壁の位置決め（ランダム）
+		
+		wallN++;
+
+	}
+	
+	if ( !ItemSlow ) {setTimeout(spawnWall, 1000);} else {setTimeout(spawnWall, 5000);} //繰り返し 1400ms
+
+}
+
+//ダメージアイテムを生成する関数
+function ATK() {
+	ATKN++;　//アイテムの番号をつける
+	//$("body").append("<div id='ATK' class='A" + ATKN + "'></div>");
+	if ( Math.floor(Math.random() * 3) != 1) {
+		if ( !hallo ) {
+			$("body").append("<img  src='atk.png' id='ATK' class='Asword A" + ATKN + "'></div>"); //攻撃のスポーン
+
+		} else {
+			$("body").append("<img  src='Hknife.svg' id='ATK' class='Asword A" + ATKN + "'></div>"); //攻撃のスポーン
+
+		}
+
+	}
+
+	$(".A" + ATKN).css("background-color", "rgba(245, 157, 157, 0.452");
+
+	$(".A" + ATKN).css("right", 0); //右からの距離が0
+	var randG = Math.floor(Math.random() * 4); //乱数を0~3の間で決める
+
+	$(".A" + ATKN).css("top", parseInt($(".ground")[randG].style.top) - parseInt($("#ATK").css("height")) - 30); //生成した壁の位置決め（ランダム）
+	
+	if ( bgm.ended ) bgm.play();
+
+	var luck = Math.floor(Math.random() * 100);
+	console.log(luck);
+
+	//アイテムのランダムスポーン
+	if ( 61 <= luck && luck <= 100 ) {
+		ATKN++;
+		specialATK("time", ATKN);
+		
+
+	} else if ( 40 <= luck && luck <= 60 ) {
+		ATKN++;
+		specialATK("freeze", ATKN);
+		
+	}else if ( 2 <= luck && luck <= 39 ) {
+		ATKN++;
+		specialATK("heal", ATKN);
+
+	} else if ( luck <=  1 ) {
+		ATKN++;
+		specialATK("halloween", ATKN);
+	}
+	
+	setTimeout(ATK, 3000); //繰り返し 3000ms
+	
+}
+
+//特殊アイテムのスポーン
+function specialATK(t, ATKN) {
+	switch (t) {
+		case "time":
+			setTimeout( function () {
+				if ( !hallo ) {
+					$("body").append("<img src='time.svg' id='ATK' class='Atime A" + ATKN + "'></div>");
+					
+				} else {
+					$("body").append("<img src='Hslow.svg' id='ATK' class='Atime A" + ATKN + "'></div>");
+
+				}
+				var randG = Math.floor(Math.random() * 4);
+				$(".Atime.A" + ATKN).css("top", parseInt($(".ground")[randG].style.top) - parseInt($("#ATK").css("height")) - 30); //生成した壁の位置決め（ランダム）
+			}, 500 + Math.floor(Math.random() * 700) );
+			
+			break;
+
+		case "freeze":
+			setTimeout( function () {
+				if ( !hallo ) {
+					$("body").append("<img src='freeze.svg' id='ATK' class='Afreeze A" + ATKN + "'></div>");
+				
+				} else {
+					$("body").append("<img src='Hfreeze.svg' id='ATK' class='Afreeze A" + ATKN + "'></div>");
+
+				}
+				var randG = Math.floor(Math.random() * 4);
+				$(".Afreeze.A" + ATKN).css("top", parseInt($(".ground")[randG].style.top) - parseInt($("#ATK").css("height")) - 30); //生成した壁の位置決め（ランダム）
+
+			}, 500 + Math.floor(Math.random() * 700) );
+			
+			break;
+
+		case "heal":
+			setTimeout( function () {
+				if ( !hallo ) {
+					$("body").append("<img src='potion.svg' id='ATK' class='Aheal A" + ATKN + "'></div>");
+				
+				} else {
+					$("body").append("<img src='Hheal.svg' id='ATK' class='Aheal A" + ATKN + "'></div>");
+
+				}
+				var randG = Math.floor(Math.random() * 4);
+				$(".Aheal.A" + ATKN).css("top", parseInt($(".ground")[randG].style.top) - parseInt($("#ATK").css("height")) - 30); //生成した壁の位置決め（ランダム）
+
+			}, 500 + Math.floor(Math.random() * 700) );
+
+			break;
+
+		case "halloween":
+			setTimeout( function () {
+				$("body").append("<img src='black-cat.svg' id='ATK' class='Ahal A" + ATKN + "'></div>");
+				var randG = Math.floor(Math.random() * 4);
+				$(".Ahal.A" + ATKN).css("top", parseInt($(".ground")[randG].style.top) - parseInt($("#ATK").css("height")) - 30); //生成した壁の位置決め（ランダム）
+				$(".Ahal").css("border", "double 5px black");
+				$(".Ahal").css("background-color", "white");
+
+			}, 500 + Math.floor(Math.random() * 700) );
+
+			break;
+
+		default:
+			break;
+
+	}
+
+
+}
+
+
+//銃弾スポーン（撃つやつ）
+function spawnBullet() {
+	if ( (bulN < 50 || bulN == 0) && readyB == 1 && !(ItemFreezing) ) {
+		bulN++;
+		if ( !hallo ) {
+			$("body").append("<img src='bullet.png' id='bul' class='B" + bulN + "'></div>");
+
+		} else {
+			$("body").append("<img src='Hbul.png' id='bul' class='B" + bulN + "'></div>");
+
+		}
+
+		shot.load();
+		shot.play();
+
+		$(".B" + bulN).css("right", 0);
+
+		var p2H = parseInt($("#p2").css("top")) + parseInt($("#p2").css("height")) * (3/5);
+		$(".B" + bulN).css("top", p2H);
+
+		readyB = 0;
+		
+	}
+	
+}
+
+//p2の銃の再装填（撃つまでの間隔)
+function BulReload() {
+	readyB = 1; //弾が撃てるYO☆
+	if ( ItemSlow ) {
+		setTimeout(BulReload, 500); //弾がまた撃てるようになるまでの時間
+
+	} else {
+		setTimeout(BulReload, 250); //弾がまた撃てるようになるまでの時間
+
+	}
+
+}
+
+//必殺技スポーン（鬱奴）
+function spawnSkill() {
+	//if ( parseInt($("#Skillbar").css("width")) >= skillFull ) {
+		if ( parseInt($("#Skillbar").css("width")) >= skillFull && skillC == 0 && ItemFreezing == 0 ) {
+			$("#p2B").css("display", "inherit");
+			$("#p2B").css("top", $("#p2").css("top"));
+			$("#p2B").toggleClass("charge");
+			$("#Skillbar").css("width","1%");
+			
+			$(".OOOOO").remove();
+
+			skillShot.load();
+			skillShot.play();
+
+			//"→"キーの無効化
+			// ---------------------------------------------------------------
+			window.document.onkeydown = function (event) {
+			//p1(青)を操作する　ウィンドウを超えないように次に進む領域が超えていないかを毎回ifで確認している
+			if ( event.key == "w" && parseInt($("#p1").css("top")) - sa > 0) $("#p1").css("top", "-=" + sa);
+			if ( event.key == "s" && parseInt($("#p1").css("bottom")) - sa > 0) $("#p1").css("top", "+=" + sa);
+			
+			//p2（赤）を操作する　ウィンドウを以下略
+			if ( event.key == "ArrowUp" && parseInt($("#p2").css("top"))- sa > 0) console.log();
+			if ( event.key == "ArrowDown" && parseInt($("#p2").css("bottom")) - sa > 0) console.log();
+			
+			if ( event.key == "ArrowLeft" ) console.log();
+			if ( event.key == "ArrowRight") console.log();
+
+			if ( event.key == " " && $(".home").css("display") != "none" ) {
+				$(".home").css("display", "none");
+				spawnWall();
+				ATK();
+				moveAttack();
+				BulReload();
+
+			}
+
+			console.log(event.key);
+
+			}
+			// ---------------------------------------------------------------
+			
+			skillC++;
+			setTimeout(spawnSkill, 1000);
+
+		} else if ( skillC == 1 ) {
+			$("#p2B").css("top", $("#p2").css("top")); //スキルのオーブの移動
+			$("body").append("<div id='SKL'></div>"); //SKLのdivの追加
+			$("#SKL").css("visibility", "inherit"); //SKLディブの表示
+
+			var p2H = parseInt($("#p2").css("top")) - parseInt($(".S").css("height"));
+
+			$("#SKL").css("top", p2H);
+			$("#SKL").css("height", "1%");
+			$("#SKL").css("width", "1%");
+			var temp_HalfTop = parseInt($("#p2").css("top")) + parseInt($("#p2").css("height")) / 2;
+			var temp_top = parseInt($("#p2").css("top"));
+
+			$("#SKL").css("top", temp_HalfTop);
+			
+			$("#SKL").animate({
+				width: "100%"
+
+			}, 250);
+			
+			//壁をまっくろくろすけにする
+			for ( i=0; i<20; i++ ) {
+				//if ( Math.abs(parseInt($("." + i).css("top")) - parseInt($("#SKL").css("top"))) <= Math.abs( parseInt( $("#butu").css("height") ) / 2 - parseInt( $("#p2").css("height") ) / 2 ) ) {
+				if ( Math.abs(parseInt($("." + i).css("top")) - p2H ) <= parseInt($("#butu").css("height")) - parseInt( $("#p2").css("height")) ) {
+					$("." + i).css("background-color", "black");
+
+				}
+				console.log(Math.abs(parseInt($("." + i).css("top")) - p2H ) + " <= " + parseInt($("#butu").css("height")) - parseInt( $("#p2").css("height")));
+
+			}
+
+			skillExp.load();
+			skillExp.play();
+
+			temp_HalfTop = parseInt($("#p2").css("top")) + parseInt($("#p2").css("height")) / 2;
+
+			//攻撃アイテムを抹消する
+			for ( i=0; i<20; i++ ) {
+				if ( Math.abs(parseInt($(".A" + i).css("top")) - temp_HalfTop) <= window.innerHeight * 0.2 ) {
+					$(".A" + i).remove();
+
+				}
+
+			}
+
+			$("#SKL").animate({
+				height: "19%",
+				top: p2H
+
+			}, 250);
+
+			feelSkill();
+			
+			setTimeout(wallburn, 1000);
+
+			//弾を抹消する
+			for ( i=0; i<50; i++ ) {
+				if ( Math.abs(parseInt($(".B" + i).css("top")) - parseInt($("#SKL").css("top"))) <= window.innerHeight * 0.2 ) {
+					$(".B" + i).remove();
+
+				}
+
+			}
+
+			if ( !hallo ) {$("#p2")[0].src = "fireman.png";} else {$("#p2")[0].src = "Hp2.png";}
+			skillC++;
+			setTimeout(spawnSkill, 2000);
+
+		} else if ( skillC >= 2 ) {
+			$("#p2B").css("display", "none");
+			$("#p2B").toggleClass("charge");
+			$("#SKL").remove();
+
+			// ---------------------------------------------------------------
+			window.document.onkeydown = function (event) {
+			//p1(青)を操作する　ウィンドウを超えないように次に進む領域が超えていないかを毎回ifで確認している
+			if ( event.key == "w" && parseInt($("#p1").css("top")) - sa > 0) $("#p1").css("top", "-=" + sa);
+			if ( event.key == "s" && parseInt($("#p1").css("bottom")) - sa > 0) $("#p1").css("top", "+=" + sa);
+			
+			//p2（赤）を操作する　ウィンドウを(以下略)
+			if ( event.key == "ArrowUp" && parseInt($("#p2").css("top"))- sa > 0) $("#p2").css("top", "-=" + sa);
+			if ( event.key == "ArrowDown" && parseInt($("#p2").css("bottom")) - sa > 0) $("#p2").css("top", "+=" + sa);
+			
+			if ( event.key == "ArrowLeft" ) spawnBullet();
+			if ( event.key == "ArrowRight") spawnSkill();
+
+			if ( event.key == " " && $(".home").css("display") != "none" ) {
+				$(".home").css("display", "none");
+				spawnWall();
+				ATK();
+				moveAttack();
+				BulReload();
+
+			}
+
+			console.log(event.key);
+
+			}
+			// ---------------------------------------------------------------
+			
+			chargePlayed = 0;
+			skillC = 0;
+
+			return;
+
+		}
+
+	//}
+
+}
+
+//壁を消す関数
+function wallburn() {
+	//壁を消す
+	for ( i=0; i<20; i++ ) {
+		if ( Math.abs(parseInt($("." + i).css("top")) - parseInt($("#SKL").css("top"))) <= window.innerHeight * 0.2 ) {
+			$("." + i).remove();
+
+		}
+
+	}
+
+}
+
+//ひっさつあわあｄさふぁｓｆさｄｇｆさｆの当たり判定
+function feelSkill() {
+	if (feelC <= 10) {
+		if ( muteki != 1 && Math.abs(parseInt($("#p1").css("top")) - parseInt($("#SKL").css("top"))) <= 50 ) {
+			damage(1, 0.3);
+			muteki = 1;
+
+		}
+		feelC++;
+		
+	} else {
+		feelC = 0;
+		return;
+
+	}
+	
+	setTimeout(feelSkill, 100);
+
+}
+
+//divを動かす関数（当たり判定も）
+function moveAttack() {
+	//壁が動く
+	for ( i=0; i<=20; i++ ) {
+		if ( !ItemSlow ) {$("." + i).css("right", "+=" + 15);} else {$("." + i).css("right", "+=" + 3);}　//rightから１5px足し続ける(slowなら7px)
+		if ( parseInt($("." + i).css("right") ) > window.innerWidth ) {
+			if ( wallN >= 19 ) wallN = 0;
+			$("." + i).remove(); //画面外にでたら削除
+			
+		}
+		
+		//当たり判定スタート
+		//if ( muteki == 0 && parseInt($("." + i).css("left")) - parseInt($("#p1").css("left")) <= parseInt($("#p1").css("width")) ) { //x軸においての当たり検知
+		//if ( muteki === 0 && (parseInt($("." + i).css("width")) / 2) + (parseInt($("#p1").css("width")) / 2) > Math.abs(parseInt($("#p1").css("left")) - parseInt($("." + i).css("left"))) ) { //x軸においての当たり検知
+		if ( muteki === 0 && Math.abs(parseInt($("#p1").css("left")) + parseInt($("#p1").css("width")) / 2 - (parseInt($("." + i).css("left")) + parseInt($("." + i).css("width")) / 2 )) <= (parseInt($("." + i).css("width")) + parseInt($("#p1").css("width"))) / 2) {
+			if ( Math.abs(parseInt($("#p1").css("bottom")) - parseInt($("." + i).css("bottom"))) < parseInt($("#p1").css("height")) ) { //y軸においての当たり判定
+				muteki = 1; //無敵モード発動
+				$("." + i).remove();
+				setTimeout(damage(1, 0.15), 100); //ダメージを受けたときの処理を関数で実行 
+			}
+				
+		}
+		
+	}
+
+	//p2の弾丸用
+	for ( i=0; i<50; i++ ) {
+		if ( !ItemSlow ) {$(".B" + i).css("right", "+=" + 50);} else {$(".B" + i).css("right", "+=" + 25);}　//rightから50px足し続ける(slowなら35px)
+		if ( parseInt($(".B" + i).css("right") ) > window.innerWidth ) {
+			if ( bulN >= 49 ) bulN = 0;
+			$(".B" + i).remove(); //画面外にでたら削除
+			
+		}
+		
+		//当たり判定スタート
+		//if ( muteki == 0 && parseInt($("." + i).css("left")) - parseInt($("#p1").css("left")) <= parseInt($("#p1").css("width")) ) { //x軸においての当たり検知
+		if ( muteki === 0 && (parseInt($(".B" + i).css("width")) / 2) + (parseInt($("#p1").css("width")) / 2) > Math.abs(parseInt($("#p1").css("left")) - parseInt($(".B" + i).css("left"))) + 50 ) { //x軸においての当たり検知
+			if ( Math.abs(parseInt($("#p1").css("bottom")) - parseInt($(".B" + i).css("bottom"))) < parseInt($("#p1").css("height")) ) { //y軸においての当たり判定
+				muteki = 1; //無敵モード発動
+				$(".B" + i).remove();
+				setTimeout(damage(1, 0.1), 100); //ダメージを受けたときの処理を関数で実行
+				
+			}
+				
+		}
+		
+	}
+
+	//アイテム移動用 -------------------------------------------------------------
+	for ( i=0; i<40; i++ ) {
+		$(".A" + i).css("right", "+=" + 7);　//rightから２０px足し続ける
+		if ( parseInt($(".A" + i).css("right") ) > window.innerWidth ) {
+			if ( ATKN >= 39 ) ATKN = 0;
+			$(".A" + i).remove(); //画面外にでたら削除
+			
+		}
+
+		for ( n=40; n<100; n++ ) {
+			$(".A" + n).remove();
+
+		}
+		
+		//当たり判定スタート
+		//if ( muteki == 0 && parseInt($("." + i).css("left")) - parseInt($("#p1").css("left")) <= parseInt($("#p1").css("width")) ) { //x軸においての当たり検知
+		//if ( (parseInt($(".A" + i).css("width")) / 2) + (parseInt($("#p1").css("width")) / 2) > Math.abs(parseInt($("#p1").css("left")) - parseInt($(".A" + i).css("left")))  ) { //x軸においての当たり検知
+		if ( Math.abs(parseInt($("#p1").css("left")) + parseInt($("#p1").css("width")) / 2 - (parseInt($(".A" + i).css("left")) + parseInt($(".A" + i).css("width")) / 2 )) <= (parseInt($(".A" + i).css("width")) + parseInt($("#p1").css("width"))) / 3) {
+			if ( Math.abs(parseInt($("#p1").css("bottom")) - parseInt($(".A" + i).css("bottom"))) < parseInt($("#p1").css("height")) ) { //y軸においての当たり判定
+				//当たったらｐ２にダメージを与える
+				if ( parseInt($(".Ahal.A" + i).css("top")) > 1 ) {
+					hallo = 1;
+					$("body").css("background","linear-gradient(to top, rgba(214, 109, 88, 0.6) 0%, rgba(41, 7, 0, 0.6) 100%) repeat scroll -78.9203px 0px / auto padding-box border-box, rgb(255, 255, 255) url('file:///C:/Users/Alex/Desktop/syoumetu/Hback.png') repeat scroll -78.9203px 0px / auto padding-box border-box");
+					$("#p2")[0].src = "Hp2.png";
+					$("#p1")[0].src = "Hp1.png";
+					$(".Aheal").src = "Hheal.svg";
+					$(".Afreeze").src = "Hfreeze.svg";
+					$(".time").src = "Hslow.svg";
+					$("#bul").src = "Hbul.png";
+
+					$(".A" + i).remove(); //当たった要素の削除
+					console.log("item hal");
+
+				}
+
+				//銃の無効化
+				if ( parseInt($(".Afreeze.A" + i).css("top")) > 1 ) {
+					ItemFreezing = 1;
+					if ( !hallo ) {
+						$("#p2")[0].src = "firemanD.png"; //画像をp2にバッテンのやつに変更
+					} else {
+						$("#p2")[0].src = "Hp2D.png";
+					}
+
+					setTimeout(function () { //2秒間p2を変数を通してフリーズ（銃無効化）
+						ItemFreezing = 0;
+						if ( !hallo ) {
+							if (parseInt($("#Skillbar").css("width")) >= skillFull) {
+								$("#p2")[0].src = "firemanCharge.png";
+							} else {
+								$("#p2")[0].src = "fireman.png"; //画像をp2にバッテンのやつに変更
+							}
+						} else {
+							$("#p2")[0].src = "Hp2.png";
+						}
+
+					}, 3000);
+					$(".A" + i).remove(); //当たった要素の削除
+					console.log("item freeze");
+
+				}
+
+				//ゆっくり
+				if ( parseInt($(".Atime.A" + i).css("top")) > 1 ) {
+					ItemSlow = 1;
+					setTimeout(function () { //2秒間壁と銃弾の進行を遅くする
+						ItemSlow = 0;
+					}, 5000);
+					$(".A" + i).remove(); //当たった要素の削除
+					console.log("item time");
+
+				}
+
+				//ヒール
+				if ( parseInt($(".Aheal.A" + i).css("top")) > 1 ) { //ヘルスの部分
+					if ( !($("#health1").css("width") >=  $("#healthB").css("width")) ) { //ヘルスが満タンでないなら
+						$("#health1").css("width", "+=10%");
+
+					} else {
+						$("#health1").css("width", $("#healthB").css("width"));
+
+					}
+					$(".A" + i).remove(); //当たった要素の削除
+					console.log("item heal");
+
+				}
+
+				//ただの攻撃アイテムなら
+				//if ( !($(".Atime.A" + i).css("top") > "1px") && !($(".Afreeze.A" + i).css("top") > "1px") && !($(".Ahal.A" + i).css("top") > "1px") && !($(".Aheal.A" + i).css("top") > "1px") ) {
+				if ( parseInt($(".Asword.A" + i).css("top")) > 1 ) {
+					setTimeout(damage(2, 0.1), 100); //ダメージを受けたときの処理を関数で実行
+					console.log("item hit");
+					$(".A" + i).remove(); //当たった要素の削除
+
+				}
+
+				if ( ATKN >= 39 ) ATKN = 0;
+
+			}
+				
+		}
+		
+	}
+	//------------------------------------------------------------------------------
+	
+	//if( ゲージが溜まっていない状態 )
+	//必殺技撃ち終わった後にゲージ貯め始めたいから、ゲージの状態は必殺技撃ち終わった後に0にして
+	if ( parseInt($("#Skillbar").css("width")) <= skillFull) {
+		$("#Skillbar").css("width", "+=0.5%");
+
+		$(".R").css("border", "solid black 3px");
+		$(".S").css("opacity", 1);
+
+		$("#health2").removeClass("SkillMax");
+		$("#health2").css("background-color", "red");
+
+	} else {
+		$(".R").css("border", "double white 7px");
+		$(".S").css("opacity", 0);
+
+		if ( !chargePlayed ) {
+			if ( !hallo ) {$("#p2")[0].src = "firemanCharge.png";} else {$("#p2")[0].src = "Hp2Charge.png";}
+			chargePlayed = 1;
+			skillCharged.load();
+			skillCharged.play();
+
+		}
+
+		$("#health2").addClass("SkillMax");
+		$("#health2").css("background-color", "rgba(1, 1, 1, 0)");
+
+	}
+	
+	setTimeout(moveAttack, 50); //繰り返し
+	
+}
+
+//攻撃をうけたときの処理の関数
+function damage(Pmode, x) {
+	if ( isNaN(Pmode) ) Pmode = 1;
+	hit.load();
+	hit.play();
+	console.log("ouch!");　//結果確認用
+	var tempH = parseInt($("#health" + Pmode).css("width"));
+	var DamageN = health * x;
+	$("#health" + Pmode).css("width", tempH - DamageN);　//体力ゲージを減らす
+
+	if ( parseInt($("#health" + Pmode).css("width")) <= 0 ) { //体力バーが0になったら
+		$("#p1").remove();
+		$("#p2").remove();
+
+		$("#end").css("visibility", "inherit");
+		 if (Pmode == 1) {
+			if (hallo) {$("#winner")[0].src = "obake.png";} else {$("#winner")[0].src = "fireman.png";}
+			$(".Pwin").innerText = "P1 WIN";
+
+		} else {
+			if (hallo) {$("#winner")[0].src = "neko.jpg";} else {$("#winner")[0].src = "figure.png";}
+			$(".Pwin").innerText = "P2 WIN";
+
+		}
+	
+	}
+
+	if ( Pmode != 2 ) tenmetu(Pmode); //プレイヤー自身の点滅処理の関数
+	
+}
+
+//プレイヤーが点滅するだけ(p2を除く)
+function tenmetu() {
+	//カウント用の変数のtenmetuCが偶数になる度に消えるようにする（奇数で再表示）
+	if ( tenmetuC % 2 == 0 ) {
+		$("#p1").css("visibility","hidden");
+		
+	} else {
+		$("#p1").css("visibility","inherit");
+		
+	}
+	
+	if ( tenmetuC > 10 ) { //点滅をn回したら
+		$("#p1").css("visibility","inherit");
+		muteki = 0;
+		tenmetuC = 0;
+		return; //関数終了
+
+	} else { //n回以下でまた関数を走らせる
+		tenmetuC++;
+		setTimeout(tenmetu, 100);
+
+	}
+	
+}
+	
+//初期起動関数
+function startup() {
+	for (i=0; i<$(".ground").length; i++) { //足場の位置の設定
+		var he = parseInt($(".ground").css("height")); //画面サイズに合わせて厚さを格納
+		var posi = (window.innerHeight - he) / 4 * (i + 1); //4分割して配置
+
+		$(".ground")[i].style.top = posi; //ここで座標を格納
+		
+	}
+	
+	//二人のプレイヤーを配置
+	$("#p1").css("top", parseInt($(".ground")[3].style.top) - parseInt($(".ground").css("height")) - parseInt($("#p1").css("height")) + 17);
+	$("#p2").css("top", parseInt($(".ground")[3].style.top) - parseInt($(".ground").css("height")) - parseInt($("#p2").css("height")) + 20);
+	
+	
+	
+	//なんかスキルが死んでるからぁ！
+	skillFull = parseInt($("#healthB").css("width"));
+
+	//プレイヤーの移動量の格納　足場の差が移動量となる
+	sa = parseInt($(".ground")[3].style.top) - parseInt($(".ground")[2].style.top);
+
+	health = parseInt($("#health1").css("width")); //体力を値にしたやつ
+	quaHealth = parseInt($("#health1").css("width")) / 4; //体力が1回でどれだけ減るかを設定
+
+	$(".one").on("click", function() {
+		/*　一人プレイか二人プレイか選択する部分
+		$(".one").css("display", "none");
+		$(".two").css("display", 'inherit');
+		*/
+		$(".home").css("display", "none"); //スタート画面の削除
+		$("body").append("<img id='c321' src='321.gif'>"); //321とカウントダウンするGIFの追加
+
+		setTimeout(function () { //321のカウントダウンに合わせていろんな関数を用意
+			$("#c321").remove();
+			spawnWall();
+			ATK();
+			moveAttack();
+			BulReload();
+
+		}, 3000);
+
+		$("#mute").remove(); //右下のミュートボタン
+
+	});
+
+	//対AIの場合
+	$("#1player").on("click",function () {
+		$(".home").css("display", "none");
+
+	});
+
+	//対人の場合
+	$("#2player").on("click",function () {
+		$(".home").css("display", "none");
+
+	});
+	
+	
+	//BGM開始
+	bgm.load();
+	bgm.play();
+	bgm.volume = 0.5;
+	
+}
+
+
+setTimeout(startup, 100); //初期起動関数の開始。（読み込んで0.1秒後)
+
+		</script>
+	</head>
+	<body>
+		<div id="healthB" class="L">
+			<div id="health1"></div>
+		</div> <!-- ←これはヘルスゲージのボーダー用） -->
+
+		<div id="healthB" class="R">
+			<div id="health2"></div>
+		</div>
+		
+		<div id="healthB" class="S">
+			<div id="Skillbar"></div>
+		</div>
+
+		<!-- <div id="butu" class="0"></div>  ←これが壁 -->
+		
+		<div class="ground"></div>
+		<div class="ground"></div>
+		<div class="ground"></div>
+		<div class="ground"></div>
+		
+		<!--<div id="p1"></div>-->
+		<img src="figure.png" id="p1">
+		<!-- <div id="p2"></div> -->
+		<img src="fireman.png" id="p2">
+		<div id="p2B"></div>
+
+		<div class="home">
+			<div class="title">
+				<!--<h1 class="cross">WS↑↓</h1>-->
+				<img style="height:170%; width:auto;" class="cross" src="ws.png">
+			</div>
+			<button id="mute" onClick="if(bgm.muted) {bgm.muted=false; $('#muB')[0].src='mute.svg';}else{bgm.muted=true; $('#muB')[0].src='Nmute.svg';}">
+				<img id="muB" src="mute.svg">
+			</button>
+			<div id="Play">
+				<button class = "one">
+				<!--開始ボタン（押される前）-->
+					<span>PLAY</span>
+				</button>              
+				<!--開始ボタン（押された後）-->
+				<div class="two">
+					<button id="1player"><span>1</span></button>
+					<button id="2player"><span>2</span></button>
+				</div>
+			</div>
+		</div>
+		<div id="end">
+			<p class="Pwin" style="font-size:100px;">YOU WIN</p>
+			<img id="winner" style="width:45%; height:150%;" src=""><br>
+			<button style="position:absolute; bottom:10px; right:10px;" onClick="location.reload();">もう一回！</button>
+		</div>
+
+	</body>
+</html>

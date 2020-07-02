@@ -1,0 +1,325 @@
+/*bodyスクロール*/
+body {
+	width: 100%;
+	height: 100%;
+	margin: 0%;
+	padding: 0%;
+	background: linear-gradient(to top, rgba(217, 175, 217, 0.6) 0%, rgba(151, 217, 225, 0.6) 100%),url(ora.png);
+	background-position: 0 0;
+	position: absolute;
+	-webkit-animation: bgroop 2000s linear infinite;
+	animation: bgroop 2000s linear infinite;
+	overflow-y: hidden;
+	overflow-x: hidden;
+	background-repeat: repeat;
+}
+
+
+#c321 {
+	position: absolute;
+	left: 30%;
+	top: 0%;
+	z-index: 100;
+}
+
+/*　足場 */
+.ground
+{
+	background-color: orange;
+	position: absolute;
+	width: 100%;
+	height: 2%;
+	left: 0px;
+	z-index: 5;
+}
+
+#Skillbar
+{
+	width: 1%;
+	height: 100%;
+	background-color: white;
+	margin: 0;
+	padding: 0;
+
+}
+
+#mute
+{
+	border: solid 5px black;
+	width: 100px;
+	height: 100px;
+	position: absolute;
+	right: 1%;
+	bottom: 1%;
+	border-radius: 100%;
+}
+
+/* ヘルスゲージ */
+#health1
+{
+	background-color: blue;
+	width: 100%;
+	height: 100%;
+	position: absolute;
+	z-index: 5;
+	opacity: 0.6;
+}
+
+#health2
+{
+	background-color: red;
+	width: 100%;
+	height: 100%;
+	z-index: 5;
+	opacity: 1;
+}
+
+/* ヘルスゲージのボーダー用ＣＳＳ */
+#healthB
+{
+	position: absolute;
+	margin: 0.75%;
+	z-index: 6;
+}
+
+.L, .R, .S {
+	border: solid black 3px;
+	border-radius: 2px;
+	width: 30%;
+	height: 3%;
+}
+/*右の体力バー*/
+.R {
+	right: 0px;
+}
+
+.SkillMax {
+	animation: stripes-move 0.75s infinite linear;
+	background: repeating-linear-gradient(45deg, red 0, red 0.25em, transparent 0.25em, transparent 0.5em);
+}
+@keyframes stripes-move {
+	100% {
+		background-position: 5em 0px;
+	}
+}
+
+/*スキルバー*/
+.S {
+	right: 0px;
+	top: 3%;
+	border: solid black 0px;
+	border-radius: 0px;
+	width: 30%;
+	height: 1%;
+	margin: 0;
+	padding: 0;
+}
+/* おっかけ側 */
+#p1
+{
+	position: absolute;
+	left: 5%;
+	border-radius: 20%;
+	width: auto;
+	height: 18%;
+	z-index: 3;
+}
+
+/*　壁の魔術師側 */
+#p2
+{
+	position: absolute;
+	right: 2%;
+	width: auto;
+	height: 20%;
+	z-index: 5;
+}
+
+#p2B
+{
+	border-radius: 100%;
+	z-index: 6;
+	background-color: white;
+	position: absolute;
+	padding: 0;
+	width: 12%;
+	height: 21%;
+	right: -1%;
+	display: none;
+	opacity: 0.6114514;
+}
+
+.charge
+{
+	animation-name: chargeBeam;
+	animation-duration: 2s;
+}
+
+@keyframes chargeBeam {
+	0%
+	{
+		background-color: #0066ff;
+	}
+
+	100%
+	{
+		background-color: #ffffff;
+	}
+}
+
+#butu
+{
+	right: 0px;
+	width: 1.5%;
+	height: 23%;
+	position: absolute;
+	background-color: #EC674A;
+	border-radius: 5px;
+	z-index: 4
+}
+
+#ATK
+{
+	right: 0px;
+	width: 4%;
+	height: 9%;
+	position: absolute;
+	background-color: rgba(167, 245, 157, 0.452);
+	border: double 1px white;
+	border-radius: 100%;
+	padding: 5px;
+	z-index: 4;
+}
+
+.RED
+{
+	background-color: rgba(245, 157, 157, 0.452);
+}
+
+#bul
+{
+	right: 0px;
+	width: 6%;
+	height: 5%;
+	position: absolute;
+	z-index: 4;
+}
+
+#SKL
+{
+	animation-name: beam;
+	animation-delay: 1s;
+	animation-duration: 1s;
+	animation-fill-mode: forwards;
+	right: 0px;
+	width: 100%;
+	height: 19%;
+	position: absolute;
+	background-color: white;
+	border: solid 2px black;
+	z-index: 5;
+}
+
+@keyframes beam {
+	0% 
+	{
+		background-color: rgba(255, 255, 255, 1);
+		border: solid 2px rgba(0, 0, 0, 1);
+	}
+	50% {
+		background-color: rgba(255, 255, 255, 0.5);
+		border: solid 2px rgba(0, 0, 0, 0.5);
+	}
+	100% {
+		background-color: rgba(255, 255, 255, 0);
+		border: solid 2px rgba(0, 0, 0, 0);
+	}
+}
+
+/*画像サイズ 778 * 581*/
+@-webkit-keyframes bgroop {
+	from {
+		background-position: 0  0;
+	}
+	to {
+		background-position: -740656px 0;
+	}
+}
+@keyframes bgroop {
+	from {
+		background-position: 0 0;
+	}
+	to {
+		background-position: -740656px 0;
+	}
+}
+
+
+/* --------------------------------------*/
+
+.home {
+    text-align: center;
+    position: absolute;
+    height: 100%;
+    width: 100%;
+	animation: colorCange 5s linear infinite;
+	z-index: 10;
+	opacity: 0.8;
+}
+
+#end
+{
+	visibility: hidden;
+	text-align: center;
+	position: relative;
+	width: 65%;
+	height: 45%;
+	z-index: 10;
+	margin-top: 2%;
+	margin-left: auto;
+	margin-right: auto;
+	border: black solid 5px;
+	border-radius: 15px;
+	background-color: rgba(255, 255, 255, 0.521);
+}
+
+@keyframes colorCange {
+    0%  {background-color: #ffddbb}
+    16% {background-color: #ffbbdd}
+    32% {background-color: #ddffbb}
+    48% {background-color: #ddbbff}
+    64% {background-color: #bbffdd}
+    80% {background-color: #bbddff}
+    100%{background-color: #ffddbb}
+}
+
+.title {
+    height: 25%;
+    width: 100%;
+    margin: 8% 0px;
+    box-sizing: border-box;
+    padding: 0 10%;
+    font-size: 64px;
+}
+
+/*----- button 3 -----*/
+
+button{
+    display: inline-block;
+    position: relative;
+    border: none;
+    color: #fff;
+    font-size: 32px;
+    cursor: pointer;
+	background: rgba(0,0,0,0.09);
+	margin-top: 5%;
+}
+
+span{
+    display: block;
+    padding: 20px 80px;
+}
+
+.two {
+    display: none;
+}
